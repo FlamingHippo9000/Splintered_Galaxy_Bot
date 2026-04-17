@@ -4,12 +4,20 @@ import discord
 from datetime import datetime
 from datetime import timedelta
 from openai import OpenAI
+import os
 
 from dotenv import load_dotenv
 from dotenv import dotenv_values, find_dotenv
 
 load_dotenv(find_dotenv())
-openai_key = dotenv_values(".env")["OPENAI_KEY"]
+
+def get_env(name):
+    value = os.getenv(name)
+    if not value:
+        raise ValueError(f"{name} is not set")
+    return value
+
+openai_key = get_env("OPENAI_KEY")
 
 #Bot Prefix
 PREFIX = '?'

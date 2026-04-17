@@ -1,0 +1,6 @@
+discord.py
+python-dotenv
+requests
+pandas
+gspread
+google-auth
