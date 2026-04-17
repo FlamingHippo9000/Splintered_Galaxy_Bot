@@ -1,4 +1,4 @@
-import SplinteredGalaxyBot
+import Bot.Splintered_Galaxy_Bot.Include.SplinteredGalaxyBot as SplinteredGalaxyBot
 #import sys, getopt
 
 

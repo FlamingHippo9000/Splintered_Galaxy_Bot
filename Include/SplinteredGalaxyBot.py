@@ -1,5 +1,5 @@
 import discord
-import responses
+import responses as responses
 from dotenv import load_dotenv
 import os
 from dotenv import dotenv_values, find_dotenv
