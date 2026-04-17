@@ -5,5 +5,4 @@ pandas
 gspread
 google-auth
 openai
-os
 unbelievaboat
