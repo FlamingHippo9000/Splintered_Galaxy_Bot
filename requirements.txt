@@ -6,5 +6,4 @@ gspread
 google-auth
 openai
 unbelievaboat
-signal
 asyncio
