@@ -1,6 +1,7 @@
 import discord
-import Bot.Splintered_Galaxy_Bot.responses as responses
+import responses
 from dotenv import load_dotenv
+import os
 from dotenv import dotenv_values, find_dotenv
 import openai
 
@@ -19,9 +20,15 @@ async def send_message(message, author):
     except Exception as e:
         print(e)
 
+def get_env(name):
+    value = os.getenv(name)
+    if not value:
+        raise ValueError(f"{name} is not set")
+    return value
+
 def run_discord_bot():
     load_dotenv(find_dotenv())
-    token = dotenv_values(".env")["TOKEN"]
+    token = get_env("BOT_TOKEN")
     intents = discord.Intents.default()
     intents.message_content = True
     client = discord.Client(intents=intents)
