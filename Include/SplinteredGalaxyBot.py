@@ -6,15 +6,17 @@ from dotenv import dotenv_values, find_dotenv
 import openai
 
 
-
+MAX_CHARS=2000
 
 #import mysql.connector as connector
 
+def truncate(text):
+    return text[:MAX_CHARS]
 
 
 async def send_message(message, author):
     try:
-        response = bot_responses.handle_response(message, author)
+        response = truncate(bot_responses.handle_response(message, author))
         #await message.author.send(response) if is_private else await message.channel.send(response)
         await message.channel.send(response)
     except Exception as e:
@@ -44,12 +46,10 @@ def run_discord_bot():
     
     @client.event
     async def on_message(message):
-        if message.author == client.user: #Ensure the message author is a user (and not the bot) to prevent endless loops
-          return 
-
-        author = message.author
-        user_message = str(message.content)
-        channel =  str(message.channel)
+        if message.author == client.user: 
+            author = message.author
+            user_message = str(message.content)
+            channel =  str(message.channel)
 
         if len(user_message) != 0:
             if user_message[0] == bot_responses.PREFIX or user_message[0] == bot_responses.PREFIX_OPENAI:
