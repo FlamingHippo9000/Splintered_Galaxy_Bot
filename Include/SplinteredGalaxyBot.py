@@ -22,11 +22,12 @@ def truncate(text):
 
 async def send_message(message, author):
     try:
-        response = truncate(bot_responses.handle_response(message, author))
+        to_be_truncated = await bot_responses.handle_response(message, author)
+        response = truncate(to_be_truncated)
         #await message.author.send(response) if is_private else await message.channel.send(response)
         await message.channel.send(response)
     except Exception as e:
-        print(e)
+        print("ERROR: send_message exception: " + str(e))
 
 def run_discord_bot():
     load_dotenv(find_dotenv())
