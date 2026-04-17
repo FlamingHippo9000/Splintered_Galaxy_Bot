@@ -139,7 +139,7 @@ async def handle_edit(split_message):
     field = split_message[2]
     value = split_message[3]
     response = await boat_calls.update_item(GUILD_ID, str(item_id), field, value)    
-    return "Updated \"" + item_name + "\", Field: " + field + " to " + response
+    return "Updated: \"" + item_name + "\", Field: \"" + field + "\" to \"" + response + "\""
 
 def handle_senior_sys_manager(author, message):
     acceptable_role = "Senior System Manager"
