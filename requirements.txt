@@ -1,12 +1,9 @@
 discord.py
 python-dotenv
 requests
+certifi
 pandas
 gspread
 google-auth
 openai
 unbelievaboat
-asyncio
-json
-shlex
-random
