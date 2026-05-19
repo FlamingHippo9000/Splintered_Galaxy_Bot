@@ -125,7 +125,7 @@ class Command:
         handler: Callable invoked when the command fires. May be sync or async;
             the dispatcher awaits the result when needed.
         aliases: Alternate spellings users may type (also lowercased on match).
-        require_ssm: When True, the caller must hold the "Senior System Manager"
+        require_admin: When True, the caller must hold the "Senior System Manager"
             role and be invoking from a guild channel.
         needs_author: Pass the message's author to `handler`.
         needs_message: Pass the raw `discord.Message` to `handler` (used by
@@ -137,7 +137,7 @@ class Command:
     description: str
     handler: Callable[..., Union[BotResponse, Awaitable[BotResponse]]]
     aliases: tuple = ()
-    require_ssm: bool = False
+    require_admin: bool = False
     needs_author: bool = False
     needs_message: bool = False
     needs_split: bool = False
@@ -164,32 +164,32 @@ COMMANDS: List[Command] = [
     Command("shop_add", "Add a new item to the shop (Senior System Manager only)",
             lambda split: handle_shop_add(split),
             aliases=("create_item", "create-item", "add_item"),
-            require_ssm=True, needs_split=True),
+            require_admin=True, needs_split=True),
     Command("create_item_interactive", "Interactive item creation (Senior System Manager only)",
             lambda author, message: handle_create_item_interactive(author, message),
             aliases=("create-item-interactive", "create-item-modal"),
-            require_ssm=True, needs_author=True, needs_message=True),
+            require_admin=True, needs_author=True, needs_message=True),
     Command("shop_stock", "Update shop stock for an item (Senior System Manager only)",
             lambda split: handle_shop_stock(split),
-            require_ssm=True, needs_split=True),
+            require_admin=True, needs_split=True),
     Command("shop_edit", "Edit an item price or description (Senior System Manager only)",
             lambda split: handle_shop_edit(split),
-            require_ssm=True, needs_split=True),
+            require_admin=True, needs_split=True),
     Command("bal_set", "Set a player's balance exactly (Senior System Manager only)",
             lambda split: handle_balance_set(split),
-            require_ssm=True, needs_split=True),
+            require_admin=True, needs_split=True),
     Command("bal_add", "Add a delta to a player's balance (Senior System Manager only)",
             lambda split: handle_balance_add(split),
-            require_ssm=True, needs_split=True),
+            require_admin=True, needs_split=True),
     Command("bal_remove", "Subtract a delta from a player's balance (Senior System Manager only)",
             lambda split: handle_balance_remove(split),
-            require_ssm=True, needs_split=True),
+            require_admin=True, needs_split=True),
     Command("give_item", "Grant an item to a player (Senior System Manager only)",
             lambda split: handle_give_item(split),
-            aliases=("give-item",), require_ssm=True, needs_split=True),
+            aliases=("give-item",), require_admin=True, needs_split=True),
     Command("remove_item", "Remove an item from a player (Senior System Manager only)",
             lambda split: handle_remove_item(split),
-            aliases=("remove-item",), require_ssm=True, needs_split=True),
+            aliases=("remove-item",), require_admin=True, needs_split=True),
     Command("use_item", "Use an item from your inventory",
             lambda author, split: handle_use_item(author, split),
             aliases=("use-item", "use"), needs_author=True, needs_split=True),
@@ -204,10 +204,14 @@ COMMANDS: List[Command] = [
             needs_split=True),
     Command("currency_icon", "Set or clear the currency icon URL (Senior System Manager only)",
             lambda split: handle_currency_icon(split),
-            require_ssm=True, needs_split=True),
+            require_admin=True, needs_split=True),
     Command("work", "Work for 5,000,000 credits every 30 minutes",
             lambda author: handle_work(author),
             needs_author=True),
+    Command("work_cooldown", "Set the cooldown duration for ?work (Senior System Manager only)",
+            lambda split: handle_work_cooldown(split),
+            aliases=("set_work_cooldown", "set-work-cooldown", "work_cd"),
+            require_admin=True, needs_split=True),
     Command("help", "Show this help message",
             lambda: handle_help()),
     Command("admin", "Check admin authorization",
@@ -215,10 +219,10 @@ COMMANDS: List[Command] = [
             needs_author=True, needs_message=True),
     Command("edit_item", "Edit a boat item field (Senior System Manager only)",
             lambda split: handle_edit(split),
-            aliases=("e_item", "edit-item"), require_ssm=True, needs_split=True),
+            aliases=("e_item", "edit-item"), require_admin=True, needs_split=True),
     Command("get_item", "Look up a boat item ID by name (Senior System Manager only)",
             lambda split: handle_get(split),
-            aliases=("g_item", "get-item"), require_ssm=True, needs_split=True),
+            aliases=("g_item", "get-item"), require_admin=True, needs_split=True),
 ]
 
 
@@ -279,7 +283,7 @@ async def handle_response(message: discord.Message, author: discord.abc.User) ->
             f"{author} said \"{user_message}\", I don't recognize this command. Use ?help for help."
         )
 
-    if cmd.require_ssm and not handle_senior_sys_manager(author, message):
+    if cmd.require_admin and not has_bot_admin_role(author, message):
         return _build_error_response("You are not authorized to complete this action")
 
     result = cmd.handler(**_build_handler_kwargs(cmd, author, message, split_message))
@@ -342,21 +346,22 @@ async def handle_edit(split_message: List[str]) -> BotResponse:
         f"Updated: \"{item_name}\", Field: \"{field}\" to \"{response}\""
     )
 
-SENIOR_SYS_MANAGER_ROLE = "Senior System Manager"
+BOT_ADMIN_ROLES = ("Senior System Manager",)
 
 
-def handle_senior_sys_manager(author: discord.abc.User, message: discord.Message) -> bool:
-    """Return True iff `author` holds the Senior System Manager role in this guild.
+def has_bot_admin_role(author: discord.abc.User, message: discord.Message) -> bool:
+    """Return True iff `author` holds a configured bot administrator role.
 
     Returns False (rather than raising) for DMs and webhook authors, which is
     the behavior every caller in the dispatcher expects.
     """
     if message.guild is None or not hasattr(author, "roles"):
         return False
-    role = discord.utils.get(message.guild.roles, name=SENIOR_SYS_MANAGER_ROLE)
-    if role is None:
-        return False
-    return role in author.roles
+    for role_name in BOT_ADMIN_ROLES:
+        role = discord.utils.get(message.guild.roles, name=role_name)
+        if role is not None and role in author.roles:
+            return True
+    return False
 
 
 def _parse_quantity_or_inf(arg: str) -> Optional[int]:
@@ -488,7 +493,7 @@ def handle_create_item_interactive(author: discord.abc.User, message: discord.Me
     """Return a view that opens an interactive modal for creating a shop item.
 
     The dispatcher enforces Senior System Manager authorization for this
-    command via `require_ssm=True` on the Command entry.
+    command via `require_admin=True` on the Command entry.
     """
     view = bot_views.CreateItemView(author.id)
     embed = discord.Embed(
@@ -842,6 +847,42 @@ def get_gpt_response(text: str) -> str:
 
 
 WORK_REWARD = 5_000_000
+
+
+def _parse_cooldown_duration(arg: str) -> Optional[timedelta]:
+    """Parse work cooldown duration strings like '30', '30m', '2h', or '60s'."""
+    if arg.endswith("s") and arg[:-1].isdigit():
+        return timedelta(seconds=int(arg[:-1]))
+    if arg.endswith("m") and arg[:-1].isdigit():
+        return timedelta(minutes=int(arg[:-1]))
+    if arg.endswith("h") and arg[:-1].isdigit():
+        return timedelta(hours=int(arg[:-1]))
+    if arg.isdigit():
+        return timedelta(minutes=int(arg))
+    return None
+
+
+def handle_work_cooldown(split_message: List[str]) -> BotResponse:
+    """Set the cooldown duration for the ?work command."""
+    if len(split_message) != 2:
+        return _build_error_response(
+            "Usage: ?work_cooldown <minutes|seconds|hours>\nExample: ?work_cooldown 30m"
+        )
+    duration = _parse_cooldown_duration(split_message[1])
+    if duration is None or duration.total_seconds() < 1:
+        return _build_error_response(
+            "Cooldown must be a positive duration like 30, 30m, 2h, or 60s."
+        )
+    global COOLDOWN
+    COOLDOWN = duration
+    if duration.total_seconds() % 60 == 0:
+        minutes = int(duration.total_seconds() // 60)
+        return _build_success_response(
+            f"Work cooldown set to {minutes} minute(s)."
+        )
+    return _build_success_response(
+        f"Work cooldown set to {int(duration.total_seconds())} second(s)."
+    )
 
 
 def handle_work(author: discord.abc.User) -> BotResponse:

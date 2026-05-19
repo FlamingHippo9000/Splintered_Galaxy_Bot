@@ -67,6 +67,21 @@ class CatalogValidation(ShopTestBase):
         with self.assertRaises(ValueError):
             self.shop.set_shop_stock("nope", 5)
 
+    def test_add_item_accepts_sql_meta_characters_in_name(self) -> None:
+        name = "malicious'; DROP TABLE items; --"
+        self.shop.add_item(name, price=1, quantity=1)
+        self.assertEqual(self.shop.get_item_by_name(name)["price"], 1)
+        self.shop.add_item("sword", price=2, quantity=1)
+        self.assertEqual(self.shop.get_item_by_name("sword")["price"], 2)
+
+    def test_update_item_description_accepts_sql_meta_characters(self) -> None:
+        self.shop.add_item("sword", price=1, quantity=1)
+        description = "nice'; DROP TABLE shop_stock; --"
+        self.shop.update_item("sword", description=description)
+        self.assertEqual(self.shop.get_item_by_name("sword")["description"], description)
+        self.shop.add_item("shield", price=3, quantity=1)
+        self.assertEqual(self.shop.get_item_by_name("shield")["price"], 3)
+
 
 class BuyErrors(ShopTestBase):
     def test_buy_unknown_item_rejected(self) -> None:

@@ -481,6 +481,11 @@ def add_item(name: str, price: int, description: str = "", quantity: int = 0) ->
     _set_shop_cache(item_id, item["name"], item["description"], item["price"], new_quantity)
     return item_id
 
+_ITEM_UPDATE_ASSIGNMENTS = {
+    "price": "price = ?",
+    "description": "description = ?",
+}
+
 
 def update_item(
     name: str,
@@ -498,10 +503,10 @@ def update_item(
     fields: List[str] = []
     values: List[object] = []
     if price is not None:
-        fields.append("price = ?")
+        fields.append(_ITEM_UPDATE_ASSIGNMENTS["price"])
         values.append(price)
     if description is not None:
-        fields.append("description = ?")
+        fields.append(_ITEM_UPDATE_ASSIGNMENTS["description"])
         values.append(description)
     values.append(item["id"])
 
